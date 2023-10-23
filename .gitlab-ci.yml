@@ -1,0 +1,20 @@
+stages:
+  - BuildApp
+
+default:
+  tags:
+    - aws
+    - docker
+
+variables:
+  AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+
+BuildApp:
+  stage: BuildApp
+  image: maven:3.8.4-openjdk-17-slim # Use Java 17 image
+  script:
+    - mvn clean package # Build the Java app to a JAR file
+  artifacts:
+    paths:
+      - target/*.jar # Archive the JAR file for later use
