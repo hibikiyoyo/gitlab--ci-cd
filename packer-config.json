@@ -1,0 +1,41 @@
+{
+  "variables": {
+    "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+    "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+    "region": "ap-northeast-2"
+  },
+
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "ami_name": "poc-v1.1.12",
+      "instance_type": "t2.micro",
+      "source_ami": "ami-02288bc8778f3166f",
+      "ssh_username" : "ec2-user",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `region`}}",
+      "subnet_id": "subnet-0164973e2348d5647",
+      "ami_description": "Amazon Linux 2 with Java App"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "target/my-spring-boot-app-1.0.0.jar",
+      "destination": "~/my-spring-boot-app-1.0.0.jar"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo yum -y update",
+        "sudo yum install java-17-amazon-corretto-headless -y",
+        "sudo yum install java-17-amazon-corretto -y",
+        "sudo yum install java-17-amazon-corretto-devel -y",
+        "sudo yum install java-17-amazon-corretto-jmods -y",
+        "sudo systemctl enable amazon-ssm-agent",
+        "sudo systemctl start amazon-ssm-agent"
+      ]
+    }
+  ]
+}
