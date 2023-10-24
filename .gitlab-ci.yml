@@ -1,5 +1,8 @@
 stages:
   - BuildApp
+  - PackerValidate
+  - PackerBuild
+  - TriggerDownstream
 
 default:
   tags:
@@ -18,3 +21,46 @@ BuildApp:
   artifacts:
     paths:
       - target/*.jar # Archive the JAR file for later use
+
+PackerValidate:
+  stage: PackerValidate
+  image:
+    name: hashicorp/packer # Use Packer image
+    entrypoint:
+      - '/usr/bin/env'
+      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  script:
+    - packer validate packer-config.json
+
+PackerBuild:
+  stage: PackerBuild
+  image:
+    name: hashicorp/packer # Use Packer image
+    entrypoint:
+      - '/usr/bin/env'
+      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  script:
+    - |
+      packer build packer-config.json 2>&1 | tee output.txt
+      echo "UP_STREAM_AMI=$(tail -2 output.txt | head -2 | awk 'match($0, /ami-.*/) { print substr($0, RSTART, RLENGTH) }')" >> ami.env
+      echo "==========================================="
+      echo "AMI ID : $(cat ami.env)"
+  artifacts:
+    reports:
+      dotenv: ami.env
+  dependencies:
+    - BuildApp
+
+TriggerDownstream:
+  stage: TriggerDownstream
+  trigger:
+    project: lg-asc/devops
+    strategy: depend
+  inherit:
+    variables: false
+  variables:
+    UP_STREAM_AMI: $UP_STREAM_AMI
+  needs:
+    - job: PackerBuild
+      artifacts: true
+
